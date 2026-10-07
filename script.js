@@ -177,38 +177,63 @@
   function formatWhatsAppMessage(data, product) {
     const branch = BRANCHES[data.branch];
     const productName = product?.id === "lainnya" ? data.otherProduct : product?.name;
-    const condition = data.eggCondition ? `\\nKondisi telur: ${data.eggCondition}` : "";
-    const company = data.companyName ? `\\nLembaga/Perusahaan: ${data.companyName}` : "";
-    const notes = data.notes ? `\\nCatatan: ${data.notes}` : "";
 
-    let estimate = "";
-    if (product && Number(product.price) > 0) {
-      const total = Number(product.price) * Number(data.quantity);
-      estimate = `\\nEstimasi katalog: ${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(total)} (belum termasuk ongkir bila berlaku)`;
-    }
-
-    return [
+    // Format WhatsApp sengaja dibuat per baris agar sama dengan urutan formulir.
+    // Gunakan newline asli (\n), bukan teks "\\n", sehingga WhatsApp menampilkannya rapi.
+    const lines = [
       "🐣 *PESANAN TELUR JAYA ABADI*",
       "",
-      `Nama: ${data.customerName}`,
-      company,
-      `No. WA: ${data.phone}`,
+      `Nama : ${data.customerName || "-"}`,
+    ];
+
+    if (data.companyName) {
+      lines.push(`Nama Lembaga / Perusahaan : ${data.companyName}`);
+    }
+
+    lines.push(
+      `Alamat : ${data.address || "-"}`,
+      `No. Telepon / WhatsApp : ${data.phone || "-"}`,
+      `Kirim Pesanan Ke : ${branch?.label || "-"}`,
       "",
-      `Produk: ${productName || "-"}`,
-      condition,
-      `Jumlah: ${data.quantity} ${data.unit}`,
-      `Ongkir: ${data.shipping}`,
-      `Pembayaran: ${data.payment}`,
+      `Barang Utama : ${productName || "-"}`
+    );
+
+    if (data.eggCondition) {
+      lines.push(`Kondisi / Variasi Telur : ${data.eggCondition}`);
+    }
+
+    lines.push(
+      `Jumlah Pemesanan : ${data.quantity || "-"} ${data.unit || ""}`.trim(),
+      `Biaya Transport / Ongkir : ${data.shipping || "-"}`,
+      `Metode Pembayaran : ${data.payment || "-"}`
+    );
+
+    if (data.notes) {
+      lines.push(`Catatan Tambahan : ${data.notes}`);
+    }
+
+    lines.push(
       "",
-      `Alamat: ${data.address}`,
-      `Cabang: ${branch.label}`,
-      `Alamat cabang: ${branch.address}`,
-      estimate,
-      notes,
+      `Alamat Cabang : ${branch?.address || "-"}`
+    );
+
+    if (product && Number(product.price) > 0) {
+      const total = Number(product.price) * Number(data.quantity);
+      const estimate = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0
+      }).format(total);
+      lines.push(`Estimasi Harga Katalog : ${estimate} (belum termasuk ongkir bila berlaku)`);
+    }
+
+    lines.push(
       "",
       "Mohon konfirmasi ketersediaan, harga akhir, ongkir, dan waktu pengiriman.",
       "Terima kasih — Telur Jaya Abadi."
-    ].join("\\n");
+    );
+
+    return lines.join("\n");
   }
 
   function submitOrder(event) {
